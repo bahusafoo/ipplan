@@ -28,11 +28,8 @@ require_once("class.dbflib.php");
 function CheckSchema() {
 
    // check php version
-   if (phpversion() < "4.1.0") {
-      die("You need php version 4.1.0 or later");
-   }
-   if (phpversion() >= "6") {
-      die("This version of IPplan will not work with PHP 6.x");
+   if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+      die("You need PHP version 8.0.0 or later");
    }
 
    // cant use myError here as we do not have access to layout yet!

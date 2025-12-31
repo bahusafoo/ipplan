@@ -31,37 +31,10 @@ define("ALLNETS", "255.255.255.255");
 if (!defined("NOCOMPRESS"))
     ob_start("ob_gzhandler");
 
-// hack to make sure systems with register_globals off work
-// very ugly, but it works. cannot be in function else variables
-// must be declared global. will be called for each script as 
-// this lib is always executed.
-$types_to_register = array('_GET','_POST','_COOKIE','_SESSION','_SERVER');
-foreach ($types_to_register as $type) {
-    $arr = @${ $type }; 
-    // get rid of magic_quotes else get multiple quotes on each submit
-    if (($type=="_GET" or $type=="_POST") and get_magic_quotes_gpc())  {
-        $arr=stripslashes_deep($arr);
-        // print_r(array_keys($arr));
-    }
-    if (@count($arr) > 0) {
-        extract($arr, EXTR_OVERWRITE);
-    }
-}
-
-// set the error reporting level for IPplan
-if (phpversion()<"5.3") {
-    error_reporting(E_ALL ^ E_NOTICE);
-}
-else {
-    error_reporting(E_ALL ^ E_NOTICE ^ E_DEPRECATED);
-}
-//error_reporting(E_ALL);
+// set the error reporting level for IPplan (PHP 8.2+)
+error_reporting(E_ALL ^ E_NOTICE ^ E_DEPRECATED);
 // set to the user defined error handler
 set_error_handler("myErrorHandler");
-// turn off those pesky quotes
-if (phpversion()<"5.3") {
-    set_magic_quotes_runtime(0);
-}
 
 /*********** end of global code which runs for each script *********/
 
@@ -466,8 +439,8 @@ function base_url() {
         // dirname strips trailing slash!
         $tmp = dirname($_SERVER["PHP_SELF"]);
         //$tmp = dirname($_SERVER["SCRIPT_NAME"]);
-        $tmp = eregi_replace("/user$","",$tmp);
-        $tmp = eregi_replace("/admin$","",$tmp);
+        $tmp = preg_replace("/\\/user$/i", "", $tmp);
+        $tmp = preg_replace("/\\/admin$/i", "", $tmp);
 
         // installed in root of a virtual server? then return empty path
         // second case here is for wierd Windows behaviour - dirname strips
@@ -488,8 +461,8 @@ function base_dir() {
     // dirname strips trailing slash!
     $tmp = dirname(__FILE__);
     //$tmp = dirname($_SERVER["SCRIPT_FILENAME"]);
-    $tmp = eregi_replace("/user$","",$tmp);
-    $tmp = eregi_replace("/admin$","",$tmp);
+    $tmp = preg_replace("/\\/user$/i", "", $tmp);
+    $tmp = preg_replace("/\\/admin$/i", "", $tmp);
 
     return $tmp;
 
@@ -530,7 +503,7 @@ function getAuthUsername() {
     // (see http://www.php.net/features.http-auth - example 34.3)
     if ( (!(isset($MY_SERVER_VARS[AUTH_VAR])))      &&
             (isset($MY_SERVER_VARS["HTTP_AUTHORIZATION"]))) {
-        if (ereg("^Basic ", $MY_SERVER_VARS["HTTP_AUTHORIZATION"]) ) {
+        if (preg_match("/^Basic /", $MY_SERVER_VARS["HTTP_AUTHORIZATION"]) ) {
             list($MY_SERVER_VARS[AUTH_VAR],$MY_SERVER_VARS["PHP_AUTH_PW"]) =
                 explode(':',base64_decode(substr($MY_SERVER_VARS["HTTP_AUTHORIZATION"], 6)));
         }
@@ -651,14 +624,14 @@ class mySearch {
     // vars - the hidden vars to maintain in this subform for submission - array, probably get or post
     // search - the search string
     // frmvar - the form variable to use
-    var $w, $vars, $search, $frmvar;
+    public $w, $vars, $search, $frmvar;
 
-    var $expr="";           // the last expression used - for form resubmit
-    var $expr_disp=FALSE;   // do we require an expression drop down?
-    var $method="get";
-    var $legend;
+    public $expr="";           // the last expression used - for form resubmit
+    public $expr_disp=FALSE;   // do we require an expression drop down?
+    public $method="get";
+    public $legend;
 
-    function mySearch(&$w, $vars, $search, $frmvar) {
+    public function __construct(&$w, $vars, $search, $frmvar) {
         $this->w=$w;
         $this->vars=$vars;
         $this->search=$search;
@@ -857,24 +830,24 @@ function user_trigger($action) {
 function myRegister($vars) {
 
     $newvars=array();
-    $tokens = split(" ", $vars);
+    $tokens = explode(" ", $vars);
 
     foreach ($tokens as $value) {
-        list($code, $variable) = split(":", $value);
+        list($code, $variable) = explode(":", $value);
         switch ($code) {
             case "A":
                 $newvars[]=isset($_REQUEST["$variable"]) ? stripslashes_deep($_REQUEST["$variable"]) : array();
-                continue;
+                break;
             case "S":
                 $newvars[]=isset($_REQUEST["$variable"]) ? stripslashes((string)$_REQUEST["$variable"]) : "";
-                continue;
-            case "B":  
+                break;
+            case "B":
                 // use floor here to convert to float as int is just not big enough for ip addresses
                 $newvars[]=isset($_REQUEST["$variable"]) ? floor($_REQUEST["$variable"]) : 0;
-                continue;
-            case "I":  
+                break;
+            case "I":
                 $newvars[]=isset($_REQUEST["$variable"]) ? (int)$_REQUEST["$variable"] : 0;
-                continue;
+                break;
         }
     }
 

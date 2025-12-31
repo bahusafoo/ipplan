@@ -222,7 +222,7 @@ while ($data = fgetcsv ($fp, 4098, FIELDS_TERMINATED_BY)) {
                        WHERE baseaddr=$base AND customer=$cust");
 
                // First, try to insert.
-               $result = &$ds->ds->Execute("INSERT INTO baseadd
+               $result = $ds->ds->Execute("INSERT INTO baseadd
                        (info, baseindex)
                        VALUES
                        (".$ds->ds->qstr($info).",
@@ -264,7 +264,7 @@ while ($data = fgetcsv ($fp, 4098, FIELDS_TERMINATED_BY)) {
                // Start of template support for base
                if (!empty($info)) {
                    // First, try to insert.
-                   $result = &$ds->ds->Execute("INSERT INTO baseadd
+                   $result = $ds->ds->Execute("INSERT INTO baseadd
                            (info, baseindex)
                            VALUES
                            (".$ds->ds->qstr($info).",
